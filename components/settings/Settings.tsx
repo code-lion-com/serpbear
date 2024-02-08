@@ -68,7 +68,7 @@ const Settings = ({ closeSettings }:SettingsProps) => {
          }
       }
 
-      if (scraper_type !== 'proxy' && scraper_type !== 'none' && !scaping_api) {
+      if (scraper_type !== 'proxy' && scraper_type !== 'local' && scraper_type !== 'none' && !scaping_api) {
          error = { type: 'no_api_key', msg: 'Insert a Valid API Key or Token for the Scraper Service.' };
       }
 

@@ -63,21 +63,22 @@ export const getScraperClient = (keyword:KeywordType, settings:SettingsType, scr
       }
    }
 
-   if (settings && settings.scraper_type === 'proxy' && settings.proxy) {
+   if (settings) {
       const axiosConfig: CreateAxiosDefaults = {};
       headers.Accept = 'gzip,deflate,compress;';
       axiosConfig.headers = headers;
-      const proxies = settings.proxy.split(/\r?\n|\r|\n/g);
-      let proxyURL = '';
-      if (proxies.length > 1) {
-         proxyURL = proxies[Math.floor(Math.random() * proxies.length)];
-      } else {
-         const [firstProxy] = proxies;
-         proxyURL = firstProxy;
+      if (settings.scraper_type === 'proxy' && settings.proxy) {
+         const proxies = settings.proxy.split(/\r?\n|\r|\n/g);
+         let proxyURL = '';
+         if (proxies.length > 1) {
+            proxyURL = proxies[Math.floor(Math.random() * proxies.length)];
+         } else {
+            const [firstProxy] = proxies;
+            proxyURL = firstProxy;
+         }
+         axiosConfig.httpsAgent = new (HttpsProxyAgent as any)(proxyURL.trim());
+         axiosConfig.proxy = false;
       }
-
-      axiosConfig.httpsAgent = new (HttpsProxyAgent as any)(proxyURL.trim());
-      axiosConfig.proxy = false;
       const axiosClient = axios.create(axiosConfig);
       client = axiosClient.get(`https://www.google.com/search?num=100&q=${encodeURI(keyword.keyword)}`);
    } else {
@@ -110,7 +111,8 @@ export const scrapeKeywordFromGoogle = async (keyword:KeywordType, settings:Sett
 
    let scraperError:any = null;
    try {
-      const res = scraperType === 'proxy' && settings.proxy ? await scraperClient : await scraperClient.then((reslt:any) => reslt.json());
+      // eslint-disable-next-line max-len
+      const res = ((scraperType === 'proxy' && settings.proxy) || scraperType === 'local') ? await scraperClient : await scraperClient.then((reslt:any) => reslt.json());
       const scraperResult = scraperObj?.resultObjectKey && res[scraperObj.resultObjectKey] ? res[scraperObj.resultObjectKey] : '';
       const scrapeResult:string = (res.data || res.html || res.results || scraperResult || '');
       if (res && scrapeResult) {

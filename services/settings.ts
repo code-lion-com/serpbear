@@ -14,8 +14,6 @@ export const useUpdateSettings = (onSuccess:Function|undefined) => {
    const queryClient = useQueryClient();
 
    return useMutation(async (settings: SettingsType) => {
-      // console.log('settings: ', JSON.stringify(settings));
-
       const headers = new Headers({ 'Content-Type': 'application/json', Accept: 'application/json' });
       const fetchOpts = { method: 'PUT', headers, body: JSON.stringify({ settings }) };
       const res = await fetch(`${window.location.origin}/api/settings`, fetchOpts);
