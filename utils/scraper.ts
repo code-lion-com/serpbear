@@ -127,11 +127,12 @@ export const scrapeKeywordFromGoogle = async (keyword:KeywordType, settings:Sett
       }
    } catch (error:any) {
       refreshedResults.error = scraperError;
-      if (settings.scraper_type === 'proxy' && error && error.response && error.response.statusText) {
+      if ((settings.scraper_type === 'proxy' || settings.scraper_type === 'local') && error && error.response && error.response.statusText) {
          refreshedResults.error = `[${error.response.status}] ${error.response.statusText}`;
       }
 
       console.log('[ERROR] Scraping Keyword : ', keyword.keyword, '. Error: ', error && error.response && error.response.statusText);
+      console.log('refreshedResults', refreshedResults);
       if (!(error && error.response && error.response.statusText)) {
          console.log('[ERROR_MESSAGE]: ', error);
       }
