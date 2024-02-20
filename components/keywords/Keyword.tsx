@@ -40,7 +40,7 @@ const Keyword = (props: KeywordProps) => {
       scDataType = 'threeDays',
    } = props;
    const {
-      keyword, domain, ID, position, url = '', lastUpdated, country, sticky, history = {}, updating = false, lastUpdateError = false,
+      keyword, domain, ID, city, position, url = '', lastUpdated, country, sticky, history = {}, updating = false, lastUpdateError = false,
    } = keywordData;
    const [showOptions, setShowOptions] = useState(false);
    const [showPositionError, setPositionError] = useState(false);
@@ -85,12 +85,12 @@ const Keyword = (props: KeywordProps) => {
 
    return (
       <div
-      key={keyword}
+      key={keyword + ID}
       style={style}
       className={`keyword relative py-5 px-4 text-gray-600 border-b-[1px] border-gray-200 lg:py-4 lg:px-6 lg:border-0 
       lg:flex lg:justify-between lg:items-center ${selected ? ' bg-indigo-50 keyword--selected' : ''} ${lastItem ? 'border-b-0' : ''}`}>
 
-         <div className=' w-3/4 lg:flex-1 lg:basis-20 lg:w-auto font-semibold cursor-pointer'>
+         <div className=' w-3/4 font-semibold cursor-pointer lg:flex-1 lg:basis-20 lg:w-auto lg:flex lg:items-center'>
             <button
                className={`p-0 mr-2 leading-[0px] inline-block rounded-sm pt-0 px-[1px] pb-[3px] border 
                ${selected ? ' bg-blue-700 border-blue-700 text-white' : 'text-transparent'}`}
@@ -99,9 +99,10 @@ const Keyword = (props: KeywordProps) => {
                   <Icon type="check" size={10} />
             </button>
             <a
-            className='py-2 hover:text-blue-600'
+            className='py-2 hover:text-blue-600 lg:flex lg:items-center lg:w-full'
             onClick={() => showKeywordDetails()}>
-               <span className={`fflag fflag-${country} w-[18px] h-[12px] mr-2`} title={countries[country][0]} />{keyword}
+               <span className={`fflag fflag-${country} w-[18px] h-[12px] mr-2`} title={countries[country][0]} />
+               <span className=' text-ellipsis overflow-hidden whitespace-nowrap w-[calc(100%-30px)]'>{keyword}{city ? ` (${city})` : ''}</span>
             </a>
             {sticky && <button className='ml-2 relative top-[2px]' title='Favorite'><Icon type="star-filled" size={16} color="#fbd346" /></button>}
             {lastUpdateError && lastUpdateError.date
@@ -114,7 +115,7 @@ const Keyword = (props: KeywordProps) => {
          <div
          className={`keyword_position absolute bg-[#f8f9ff] w-fit min-w-[50px] h-12 p-2 text-base mt-[-20px] rounded right-5 lg:relative
           lg:bg-transparent lg:w-auto lg:h-auto lg:mt-0 lg:p-0 lg:text-sm lg:flex-1 lg:basis-24 lg:grow-0 lg:right-0 text-center font-semibold`}>
-            <KeywordPosition position={position} />
+            <KeywordPosition position={position} updating={updating} />
             {!updating && positionChange > 0 && <i className=' not-italic ml-1 text-xs text-[#5ed7c3]'>▲ {positionChange}</i>}
             {!updating && positionChange < 0 && <i className=' not-italic ml-1 text-xs text-red-300'>▼ {positionChange}</i>}
          </div>

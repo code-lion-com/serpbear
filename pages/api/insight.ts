@@ -1,8 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import db from '../../database/database';
 import { getCountryInsight, getKeywordsInsight, getPagesInsight } from '../../utils/insight';
-import { fetchDomainSCData, readLocalSCData } from '../../utils/searchConsole';
+import { fetchDomainSCData, getSearchConsoleApiInfo, readLocalSCData } from '../../utils/searchConsole';
 import verifyUser from '../../utils/verifyUser';
+import Domain from '../../database/models/domain';
 
 type SCInsightRes = {
    data: InsightDataType | null,
@@ -23,9 +24,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
 const getDomainSearchConsoleInsight = async (req: NextApiRequest, res: NextApiResponse<SCInsightRes>) => {
    if (!req.query.domain && typeof req.query.domain !== 'string') return res.status(400).json({ data: null, error: 'Domain is Missing.' });
-   if (!!(process.env.SEARCH_CONSOLE_PRIVATE_KEY && process.env.SEARCH_CONSOLE_CLIENT_EMAIL) === false) {
-      return res.status(200).json({ data: null, error: 'Google Search Console Not Integrated' });
-   }
    const domainname = (req.query.domain as string).replaceAll('-', '.').replaceAll('_', '-');
    const getInsightFromSCData = (localSCData: SCDomainDataType): InsightDataType => {
       const { stats = [] } = localSCData;
@@ -37,17 +35,26 @@ const getDomainSearchConsoleInsight = async (req: NextApiRequest, res: NextApiRe
 
    // First try and read the  Local SC Domain Data file.
    const localSCData = await readLocalSCData(domainname);
-   const oldFetchedDate = localSCData.lastFetched;
-   const fetchTimeDiff = new Date().getTime() - (oldFetchedDate ? new Date(oldFetchedDate as string).getTime() : 0);
 
-   if (localSCData && localSCData.stats && localSCData.stats.length && fetchTimeDiff <= 86400000) {
-      const response = getInsightFromSCData(localSCData);
-      return res.status(200).json({ data: response });
+   if (localSCData) {
+      const oldFetchedDate = localSCData.lastFetched;
+      const fetchTimeDiff = new Date().getTime() - (oldFetchedDate ? new Date(oldFetchedDate as string).getTime() : 0);
+      if (localSCData.stats && localSCData.stats.length && fetchTimeDiff <= 86400000) {
+         const response = getInsightFromSCData(localSCData);
+         return res.status(200).json({ data: response });
+      }
    }
 
    // If the Local SC Domain Data file does not exist, fetch from Googel Search Console.
    try {
-      const scData = await fetchDomainSCData(domainname);
+      const query = { domain: domainname };
+      const foundDomain:Domain| null = await Domain.findOne({ where: query });
+      const domainObj: DomainType = foundDomain && foundDomain.get({ plain: true });
+      const scDomainAPI = await getSearchConsoleApiInfo(domainObj);
+      if (!(scDomainAPI.client_email && scDomainAPI.private_key)) {
+         return res.status(200).json({ data: null, error: 'Google Search Console is not Integrated.' });
+      }
+      const scData = await fetchDomainSCData(domainObj, scDomainAPI);
       const response = getInsightFromSCData(scData);
       return res.status(200).json({ data: response });
    } catch (error) {

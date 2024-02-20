@@ -3,6 +3,7 @@ import { useClearFailedQueue } from '../../services/settings';
 import Icon from '../common/Icon';
 import SelectField, { SelectionOption } from '../common/SelectField';
 import SecretField from '../common/SecretField';
+import ToggleField from '../common/ToggleField';
 
 type ScraperSettingsProps = {
    settings: SettingsType,
@@ -44,18 +45,18 @@ const ScraperSettings = ({ settings, settingsError, updateSettings }:ScraperSett
       <div className='settings__content styled-scrollbar p-6 text-sm'>
 
          <div className="settings__section__select mb-5">
-            <label className={labelStyle}>Scraping Method</label>
             <SelectField
+            label='Scraping Method'
             options={scraperOptions}
             selected={[settings.scraper_type || 'none']}
             defaultLabel="Select Scraper"
             updateField={(updatedTime:[string]) => updateSettings('scraper_type', updatedTime[0])}
             multiple={false}
             rounded={'rounded'}
-            minWidth={270}
+            minWidth={220}
             />
          </div>
-         {['scrapingant', 'scrapingrobot', 'serply', 'serpapi', 'spaceSerp', 'searchapi'].includes(settings.scraper_type) && (
+         {settings.scraper_type !== 'none' && settings.scraper_type !== 'proxy' && (
             <SecretField
             label='Scraper API Key or Token'
             placeholder={'API Key/Token'}
@@ -79,8 +80,8 @@ const ScraperSettings = ({ settings, settingsError, updateSettings }:ScraperSett
          )}
          {settings.scraper_type !== 'none' && (
             <div className="settings__section__input mb-5">
-               <label className={labelStyle}>Scraping Frequency</label>
                <SelectField
+                  label='Scraping Frequency'
                   multiple={false}
                   selected={[settings?.scrape_interval || 'daily']}
                   options={scrapingOptions}
@@ -88,14 +89,14 @@ const ScraperSettings = ({ settings, settingsError, updateSettings }:ScraperSett
                   updateField={(updated:string[]) => updated[0] && updateSettings('scrape_interval', updated[0])}
                   rounded='rounded'
                   maxHeight={48}
-                  minWidth={270}
+                  minWidth={220}
                />
                <small className=' text-gray-500 pt-2 block'>This option requires Server/Docker Instance Restart to take Effect.</small>
             </div>
          )}
             <div className="settings__section__input mb-5">
-               <label className={labelStyle}>Delay Between Each keyword Scrape</label>
                <SelectField
+                  label='keyword Scrape Delay'
                   multiple={false}
                   selected={[settings?.scrape_delay || '0']}
                   options={delayOptions}
@@ -103,28 +104,16 @@ const ScraperSettings = ({ settings, settingsError, updateSettings }:ScraperSett
                   updateField={(updated:string[]) => updated[0] && updateSettings('scrape_delay', updated[0])}
                   rounded='rounded'
                   maxHeight={48}
-                  minWidth={270}
+                  minWidth={220}
                />
                <small className=' text-gray-500 pt-2 block'>This option requires Server/Docker Instance Restart to take Effect.</small>
             </div>
             <div className="settings__section__input mb-5">
-               <label className="relative inline-flex items-center cursor-pointer w-full justify-between">
-                  <span className="text-sm font-medium text-gray-900 dark:text-gray-300 w-56">Auto Retry Failed Keyword Scrape</span>
-                  <input
-                  type="checkbox"
-                  value={settings?.scrape_retry ? 'true' : '' }
-                  checked={settings.scrape_retry || false}
-                  className="sr-only peer"
-                  onChange={() => updateSettings('scrape_retry', !settings.scrape_retry)}
-                  />
-                  <div className="relative rounded-3xl w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4
-                  peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800rounded-full peer dark:bg-gray-700
-                  peer-checked:after:translate-x-full peer-checked:after:border-white after:content-['']
-                  after:absolute after:top-[2px] after:left-[2px] after:bg-white  after:border-gray-300
-                  after:border after:rounded-full after:h-4 after:w-4
-                  after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-
-               </label>
+               <ToggleField
+               label='Auto Retry Failed Keyword Scrape'
+               value={settings?.scrape_retry ? 'true' : '' }
+               onChange={(val) => updateSettings('scrape_retry', val)}
+               />
             </div>
             {settings?.scrape_retry && (settings.failed_queue?.length || 0) > 0 && (
                <div className="settings__section__input mb-5">

@@ -1,9 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import type { NextPage } from 'next';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-// import { useQuery } from 'react-query';
-// import toast from 'react-hot-toast';
 import { CSSTransition } from 'react-transition-group';
 import Sidebar from '../../../components/common/Sidebar';
 import TopBar from '../../../components/common/TopBar';
@@ -16,21 +14,20 @@ import Settings from '../../../components/settings/Settings';
 import { useFetchDomains } from '../../../services/domains';
 import { useFetchKeywords } from '../../../services/keywords';
 import { useFetchSettings } from '../../../services/settings';
+import AddKeywords from '../../../components/keywords/AddKeywords';
 
 const SingleDomain: NextPage = () => {
    const router = useRouter();
-   const [noScrapprtError, setNoScrapprtError] = useState(false);
    const [showAddKeywords, setShowAddKeywords] = useState(false);
    const [showAddDomain, setShowAddDomain] = useState(false);
    const [showDomainSettings, setShowDomainSettings] = useState(false);
    const [showSettings, setShowSettings] = useState(false);
    const [keywordSPollInterval, setKeywordSPollInterval] = useState<undefined|number>(undefined);
-   const { data: appSettings } = useFetchSettings();
+   const { data: appSettingsData, isLoading: isAppSettingsLoading } = useFetchSettings();
    const { data: domainsData } = useFetchDomains(router);
-   const { keywordsData, keywordsLoading } = useFetchKeywords(router, setKeywordSPollInterval, keywordSPollInterval);
-
-   const theDomains: DomainType[] = (domainsData && domainsData.domains) || [];
-   const theKeywords: KeywordType[] = keywordsData && keywordsData.keywords;
+   const appSettings: SettingsType = appSettingsData?.settings || {};
+   const { scraper_type = '', available_scapers = [] } = appSettings;
+   const activeScraper = useMemo(() => available_scapers.find((scraper) => scraper.value === scraper_type), [scraper_type, available_scapers]);
 
    const activDomain: DomainType|null = useMemo(() => {
       let active:DomainType|null = null;
@@ -40,18 +37,18 @@ const SingleDomain: NextPage = () => {
       return active;
    }, [router.query.slug, domainsData]);
 
-   useEffect(() => {
-      // console.log('appSettings.settings: ', appSettings && appSettings.settings);
-      if (appSettings && appSettings.settings && (!appSettings.settings.scraper_type || (appSettings.settings.scraper_type === 'none'))) {
-         setNoScrapprtError(true);
-      }
-   }, [appSettings]);
+   const domainHasScAPI = useMemo(() => {
+      const doaminSc = activDomain?.search_console ? JSON.parse(activDomain.search_console) : {};
+      return !!(doaminSc?.client_email && doaminSc?.private_key);
+   }, [activDomain]);
 
-   // console.log('Domains Data:', router, activDomain, theKeywords);
+   const { keywordsData, keywordsLoading } = useFetchKeywords(router, activDomain?.domain || '', setKeywordSPollInterval, keywordSPollInterval);
+   const theDomains: DomainType[] = (domainsData && domainsData.domains) || [];
+   const theKeywords: KeywordType[] = keywordsData && keywordsData.keywords;
 
    return (
       <div className="Domain ">
-         {noScrapprtError && (
+         {((!scraper_type || (scraper_type === 'none')) && !isAppSettingsLoading) && (
                <div className=' p-3 bg-red-600 text-white text-sm text-center'>
                   A Scrapper/Proxy has not been set up Yet. Open Settings to set it up and start using the app.
                </div>
@@ -80,7 +77,7 @@ const SingleDomain: NextPage = () => {
                keywords={theKeywords}
                showAddModal={showAddKeywords}
                setShowAddModal={setShowAddKeywords}
-               isConsoleIntegrated={!!(appSettings && appSettings?.settings?.search_console_integrated) }
+               isConsoleIntegrated={!!(appSettings && appSettings.search_console_integrated) || domainHasScAPI }
                />
             </div>
          </div>
@@ -97,6 +94,15 @@ const SingleDomain: NextPage = () => {
          </CSSTransition>
          <CSSTransition in={showSettings} timeout={300} classNames="settings_anim" unmountOnExit mountOnEnter>
              <Settings closeSettings={() => setShowSettings(false)} />
+         </CSSTransition>
+         <CSSTransition in={showAddKeywords} timeout={300} classNames="modal_anim" unmountOnExit mountOnEnter>
+            <AddKeywords
+               domain={activDomain?.domain || ''}
+               scraperName={activeScraper?.label || ''}
+               keywords={theKeywords}
+               allowsCity={!!activeScraper?.allowsCity}
+               closeModal={() => setShowAddKeywords(false)}
+               />
          </CSSTransition>
       </div>
    );

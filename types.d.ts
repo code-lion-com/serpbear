@@ -15,6 +15,7 @@ type DomainType = {
    scVisits?: number,
    scImpressions?: number,
    scPosition?: number,
+   search_console?: string,
 }
 
 type KeywordHistory = {
@@ -39,6 +40,7 @@ type KeywordType = {
    lastUpdateError: {date: string, error: string, scraper: string} | false,
    scData?: KeywordSCData,
    uid?: string
+   city?: string
 }
 
 type KeywordLastResult = {
@@ -61,9 +63,17 @@ type countryCodeData = {
    [ISO:string] : string
 }
 
+type DomainSearchConsole = {
+   property_type: 'domain' | 'url',
+   url: string,
+   client_email:string,
+   private_key:string,
+}
+
 type DomainSettings = {
    notification_interval: string,
    notification_emails: string,
+   search_console?: DomainSearchConsole
 }
 
 type SettingsType = {
@@ -77,14 +87,17 @@ type SettingsType = {
    smtp_port: string,
    smtp_username?: string,
    smtp_password?: string,
-   search_console_integrated?: boolean,
-   available_scapers?: Array,
+   available_scapers?: { label: string, value: string, allowsCity?: boolean }[],
    scrape_interval?: string,
    scrape_delay?: string,
    scrape_retry?: boolean,
    failed_queue?: string[]
    version?: string,
    screenshot_key?: string,
+   search_console: boolean,
+   search_console_client_email: string,
+   search_console_private_key: string,
+   search_console_integrated?: boolean,
 }
 
 type KeywordSCDataChild = {
@@ -108,7 +121,8 @@ type KeywordAddPayload = {
    device: string,
    country: string,
    domain: string,
-   tags: string,
+   tags?: string,
+   city?:string
 }
 
 type SearchAnalyticsRawItem = {
@@ -177,11 +191,23 @@ type scraperExtractedItem = {
    position: number,
 }
 interface ScraperSettings {
+   /** A Unique ID for the Scraper. eg: myScraper */
    id:string,
+   /** The Name of the Scraper */
    name:string,
+   /** The Website address of the Scraper */
    website:string,
+   /** The result object's key that contains the results of the scraped data. For example,
+    * if your scraper API the data like this `{scraped:[item1,item2..]}` the resultObjectKey should be "scraped" */
    resultObjectKey: string,
+   /** If the Scraper allows setting a perices location or allows city level scraping set this to true. */
+   allowsCity?: boolean,
+   /** Set your own custom HTTP header properties when making the scraper API request.
+    * The function should return an object that contains all the header properties you want to pass to API request's header.
+    * Example: `{'Cache-Control': 'max-age=0', 'Content-Type': 'application/json'}` */
    headers?(keyword:KeywordType, settings: SettingsType): Object,
+   /** Construct the API URL for scraping the data through your Scraper's API */
    scrapeURL?(keyword:KeywordType, settings:SettingsType, countries:countryData): string,
+   /** Custom function to extract the serp result from the scraped data. The extracted data should be @return {scraperExtractedItem[]} */
    serpExtractor?(content:string): scraperExtractedItem[],
 }
